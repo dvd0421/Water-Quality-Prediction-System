@@ -6,10 +6,12 @@ import pandas as pd
 import plotly.graph_objects as go
 from geopy.geocoders import Nominatim
 import os
+import html
+import streamlit.components.v1 as components  # NEW
 
 # Page configuration
 st.set_page_config(
-    page_title="Water Safety Montor",
+    page_title="Water Safety Monitor",
     page_icon="💧",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -25,33 +27,10 @@ st.markdown("""
         text-align: center;
         margin-bottom: 2rem;
     }
-    .risk-safe {
-        background-color: #d4edda;
-        border-left: 5px solid #28a745;
-        padding: 1rem;
-        border-radius: 5px;
-        margin: 1rem 0;
-    }
-    .risk-caution {
-        background-color: #fff3cd;
-        border-left: 5px solid #ffc107;
-        padding: 1rem;
-        border-radius: 5px;
-        margin: 1rem 0;
-    }
-    .risk-unsafe {
-        background-color: #f8d7da;
-        border-left: 5px solid #dc3545;
-        padding: 1rem;
-        border-radius: 5px;
-        margin: 1rem 0;
-    }
-    .metric-box {
-        background-color: #f8f9fa;
-        padding: 1rem;
-        border-radius: 5px;
-        text-align: center;
-    }
+    .risk-safe { background-color: #d4edda; border-left: 5px solid #28a745; padding: 1rem; border-radius: 5px; margin: 1rem 0; }
+    .risk-caution { background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 1rem; border-radius: 5px; margin: 1rem 0; }
+    .risk-unsafe { background-color: #f8d7da; border-left: 5px solid #dc3545; padding: 1rem; border-radius: 5px; margin: 1rem 0; }
+    .metric-box { background-color: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -69,9 +48,114 @@ if 'history' not in st.session_state:
 if 'last_location' not in st.session_state:
     st.session_state.last_location = None
 
+# === Google Maps helper ===
+def render_google_map(center_lat, center_lng, current_label, current_risk, history_points=None, radius_m=3000):
+    """
+    Embed Google Maps JavaScript API with a center marker and optional history markers.
+    Requires GOOGLE_MAPS_API_KEY in st.secrets or environment.
+    """
+    api_key = st.secrets.get("GOOGLE_MAPS_API_KEY", os.environ.get("GOOGLE_MAPS_API_KEY", ""))
+    if not api_key:
+        st.warning("Set GOOGLE_MAPS_API_KEY in st.secrets or environment to enable Google Maps.")
+        return
+
+    # Build markers array for JS
+    hist = history_points or []
+    # Risk color mapping for circle and marker labels
+    risk_colors = {"Safe": "#28a745", "Caution": "#ffc107", "Unsafe": "#dc3545"}
+
+    def sanitize(s):
+        return html.escape(str(s), quote=True)
+
+    # Current marker
+    current_js_obj = f"""{{
+        position: {{lat: {center_lat:.6f}, lng: {center_lng:.6f}}},
+        title: "{sanitize(current_label)}",
+        risk: "{sanitize(current_risk)}",
+        isCurrent: true
+    }}"""
+
+    # History markers (limit to recent 20)
+    hist = hist[:20]
+    hist_js_list = []
+    for h in hist:
+        hist_js_list.append(f"""{{
+            position: {{lat: {float(h['latitude']):.6f}, lng: {float(h['longitude']):.6f}}},
+            title: "{sanitize(h['location'])} • {sanitize(h['risk_level'])} ({int(h['risk_score'])})",
+            risk: "{sanitize(h['risk_level'])}",
+            isCurrent: false
+        }}""")
+    hist_js = ",".join(hist_js_list)
+
+    circle_color = risk_colors.get(current_risk, "#1f77b4")
+
+    html_content = f"""
+    <div id="map" style="width:100%; height:420px; border-radius:8px;"></div>
+    <script>
+      let map;
+      async function initMap() {{
+        const {{ Map }} = await google.maps.importLibrary("maps");
+        const {{ AdvancedMarkerElement, PinElement }} = await google.maps.importLibrary("marker");
+        map = new Map(document.getElementById("map"), {{
+          center: {{ lat: {center_lat:.6f}, lng: {center_lng:.6f} }},
+          zoom: 11,
+          mapId: "DEMO_MAP_ID"
+        }});
+
+        const markers = [{current_js_obj}{("," + hist_js) if hist_js else ""}];
+
+        // Style pins by risk
+        function pinForRisk(risk, labelText) {{
+          const colors = {{
+            "Safe": "#28a745",
+            "Caution": "#ffc107",
+            "Unsafe": "#dc3545"
+          }};
+          const pin = new PinElement({{
+            background: colors[risk] || "#1f77b4",
+            glyphColor: "#000",
+            borderColor: "#333",
+            scale: 1.1
+          }});
+          return pin;
+        }}
+
+        // Add circle for current area of interest
+        const riskCircle = new google.maps.Circle({{
+          strokeColor: "{circle_color}",
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          fillColor: "{circle_color}",
+          fillOpacity: 0.15,
+          map,
+          center: {{ lat: {center_lat:.6f}, lng: {center_lng:.6f} }},
+          radius: {int(radius_m)}
+        }});
+
+        const info = new google.maps.InfoWindow();
+
+        markers.forEach(m => {{
+          const pin = pinForRisk(m.risk, m.title);
+          const marker = new AdvancedMarkerElement({{
+            map,
+            position: m.position,
+            title: m.title,
+            content: pin.element
+          }});
+          marker.addListener("click", () => {{
+            info.close();
+            info.setContent(`<div style="min-width:200px"><strong>${{m.title}}</strong><br/>Risk: ${{m.risk}}</div>`);
+            info.open({{ anchor: marker, map }});
+          }});
+        }});
+      }}
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key={api_key}&v=weekly&libraries=marker&callback=initMap" async defer></script>
+    """
+    components.html(html_content, height=440, scrolling=False)
+
 # Functions
 def get_coordinates_from_city(city_name):
-    """Convert city name to coordinates using geopy"""
     try:
         geolocator = Nominatim(user_agent="water_safety_monitor")
         location = geolocator.geocode(city_name)
@@ -83,7 +167,6 @@ def get_coordinates_from_city(city_name):
         return None, None, None
 
 def fetch_weather_data(latitude, longitude):
-    """Fetch weather data from Open-Meteo API"""
     try:
         url = f"https://api.open-meteo.com/v1/forecast"
         params = {
@@ -102,26 +185,13 @@ def fetch_weather_data(latitude, longitude):
         return None
 
 def calculate_risk_score(weather_data, user_observations):
-    """
-    Calculate water contamination risk based on scientific factors
-    
-    Risk factors:
-    - Heavy rainfall: increases runoff contamination
-    - High temperature: accelerates bacterial growth
-    - High humidity: creates conditions for microbial proliferation
-    - Recent precipitation accumulation
-    - User observations
-    """
     risk_score = 0
     risk_factors = []
-    
     if not weather_data:
         return 50, ["Unable to fetch weather data"], "Caution"
-    
     current = weather_data.get('current', {})
     hourly = weather_data.get('hourly', {})
-    
-    # Temperature risk (optimal bacterial growth: 20-45°C)
+
     temp = current.get('temperature_2m', 0)
     if 20 <= temp <= 45:
         temp_risk = min(25, (temp - 20) / 25 * 25)
@@ -130,26 +200,21 @@ def calculate_risk_score(weather_data, user_observations):
     elif temp > 45:
         risk_score += 15
         risk_factors.append(f"Very high temperature ({temp}°C)")
-    
-    # Humidity risk (high humidity promotes bacterial growth)
+
     humidity = current.get('relative_humidity_2m', 0)
     if humidity > 70:
         humidity_risk = min(15, (humidity - 70) / 30 * 15)
         risk_score += humidity_risk
         risk_factors.append(f"High humidity ({humidity}%)")
-    
-    # Current precipitation
+
     current_rain = current.get('precipitation', 0) or current.get('rain', 0)
     if current_rain > 0:
         rain_risk = min(20, current_rain * 4)
         risk_score += rain_risk
         risk_factors.append(f"Active rainfall ({current_rain} mm)")
-    
-    # Calculate 24-hour and 72-hour precipitation accumulation
+
     if hourly and 'precipitation' in hourly:
-        precip_data = hourly['precipitation'][-72:]  # Last 72 hours
-        
-        # 24-hour accumulation
+        precip_data = hourly['precipitation'][-72:]
         precip_24h = sum([p for p in precip_data[-24:] if p is not None])
         if precip_24h > 10:
             rain_24h_risk = min(25, (precip_24h - 10) / 40 * 25)
@@ -158,14 +223,11 @@ def calculate_risk_score(weather_data, user_observations):
         elif precip_24h > 5:
             risk_score += 10
             risk_factors.append(f"Moderate rain in last 24h ({precip_24h:.1f} mm)")
-        
-        # 72-hour accumulation
         precip_72h = sum([p for p in precip_data if p is not None])
         if precip_72h > 50:
             risk_score += 15
             risk_factors.append(f"Prolonged rainfall over 3 days ({precip_72h:.1f} mm)")
-    
-    # User observation risks
+
     obs_risk_map = {
         "Water looks cloudy/murky": 15,
         "Unusual smell": 20,
@@ -175,27 +237,21 @@ def calculate_risk_score(weather_data, user_observations):
         "Industrial discharge observed": 30,
         "Sewage overflow": 35
     }
-    
     for obs, risk_value in obs_risk_map.items():
         if obs in user_observations:
             risk_score += risk_value
             risk_factors.append(f"Observation: {obs}")
-    
-    # Cap risk score at 100
+
     risk_score = min(100, risk_score)
-    
-    # Determine risk level
     if risk_score < 30:
         risk_level = "Safe"
     elif risk_score < 60:
         risk_level = "Caution"
     else:
         risk_level = "Unsafe"
-    
     return risk_score, risk_factors, risk_level
 
 def get_recommendations(risk_level, risk_score):
-    """Provide safety recommendations based on risk level"""
     recommendations = {
         "Safe": {
             "title": "✅ Water Appears Safe",
@@ -234,17 +290,12 @@ def get_recommendations(risk_level, risk_score):
             "color": "unsafe"
         }
     }
-    
     rec = recommendations.get(risk_level, recommendations["Caution"])
-    
-    # Add risk score context
     if risk_score >= 80:
         rec["actions"].insert(0, "⚠️ **CRITICAL**: Risk score is very high - take immediate action")
-    
     return rec
 
 def save_to_history(location_name, lat, lon, weather_data, risk_score, risk_level, risk_factors, observations):
-    """Save assessment to history"""
     entry = {
         "timestamp": datetime.now().isoformat(),
         "location": location_name,
@@ -258,28 +309,17 @@ def save_to_history(location_name, lat, lon, weather_data, risk_score, risk_leve
         "humidity": weather_data.get('current', {}).get('relative_humidity_2m'),
         "precipitation": weather_data.get('current', {}).get('precipitation', 0)
     }
-    
     st.session_state.history.append(entry)
-    
-    # Keep only last 30 days
     cutoff_date = datetime.now() - timedelta(days=30)
     st.session_state.history = [
         h for h in st.session_state.history 
         if datetime.fromisoformat(h['timestamp']) > cutoff_date
     ]
-    
-    # Save to file
     with open(HISTORY_FILE, 'w') as f:
         json.dump(st.session_state.history, f)
 
 def display_risk_gauge(risk_score, risk_level):
-    """Create a gauge chart for risk visualization"""
-    colors = {
-        "Safe": "#28a745",
-        "Caution": "#ffc107",
-        "Unsafe": "#dc3545"
-    }
-    
+    colors = {"Safe": "#28a745", "Caution": "#ffc107", "Unsafe": "#dc3545"}
     fig = go.Figure(go.Indicator(
         mode="gauge+number+delta",
         value=risk_score,
@@ -297,20 +337,10 @@ def display_risk_gauge(risk_score, risk_level):
                 {'range': [30, 60], 'color': '#fff3cd'},
                 {'range': [60, 100], 'color': '#f8d7da'}
             ],
-            'threshold': {
-                'line': {'color': "red", 'width': 4},
-                'thickness': 0.75,
-                'value': 90
-            }
+            'threshold': {'line': {'color': "red", 'width': 4}, 'thickness': 0.75, 'value': 90}
         }
     ))
-    
-    fig.update_layout(
-        paper_bgcolor="white",
-        font={'color': "darkgray", 'family': "Arial"},
-        height=300
-    )
-    
+    fig.update_layout(paper_bgcolor="white", font={'color': "darkgray", 'family': "Arial"}, height=300)
     return fig
 
 # Main App
@@ -319,11 +349,7 @@ st.markdown("### Real-time water contamination risk assessment based on environm
 
 # Sidebar - Location Input
 st.sidebar.header("📍 Location Settings")
-
-location_method = st.sidebar.radio(
-    "Choose location method:",
-    ["Enter City Name", "Enter Coordinates"]
-)
+location_method = st.sidebar.radio("Choose location method:", ["Enter City Name", "Enter Coordinates"])
 
 if location_method == "Enter City Name":
     city_name = st.sidebar.text_input(
@@ -331,7 +357,6 @@ if location_method == "Enter City Name":
         value=st.session_state.last_location if st.session_state.last_location else "",
         placeholder="e.g., Abu Dhabi, London, New York"
     )
-    
     if st.sidebar.button("Get Location", type="primary"):
         if city_name:
             with st.spinner("Getting coordinates..."):
@@ -350,7 +375,6 @@ else:
     col1, col2 = st.sidebar.columns(2)
     lat_input = col1.number_input("Latitude", value=24.4539, format="%.4f")
     lon_input = col2.number_input("Longitude", value=54.3773, format="%.4f")
-    
     if st.sidebar.button("Use Coordinates", type="primary"):
         st.session_state.latitude = lat_input
         st.session_state.longitude = lon_input
@@ -371,32 +395,40 @@ observations = st.sidebar.multiselect(
         "Sewage overflow"
     ]
 )
+additional_notes = st.sidebar.text_area("Additional notes (optional)", placeholder="Any other observations or concerns...")
 
-additional_notes = st.sidebar.text_area(
-    "Additional notes (optional)",
-    placeholder="Any other observations or concerns..."
-)
+# Toggle for map
+show_map = st.sidebar.toggle("Show Google Map", value=True)  # NEW
 
 # Main content
 if 'latitude' in st.session_state and 'longitude' in st.session_state:
     st.info(f"📍 Current Location: {st.session_state.location_name}")
-    
+
+    # Map display
+    if show_map:
+        # Build a compact history list for markers
+        hist_points = []
+        if st.session_state.history:
+            # recent 10 entries with coordinates
+            for h in sorted(st.session_state.history, key=lambda x: x["timestamp"], reverse=True):
+                if h.get("latitude") is not None and h.get("longitude") is not None:
+                    hist_points.append(h)
+                if len(hist_points) >= 10:
+                    break
+        render_google_map(
+            st.session_state.latitude,
+            st.session_state.longitude,
+            current_label=st.session_state.location_name,
+            current_risk=st.session_state.get('current_assessment', {}).get('risk_level', 'Caution'),
+            history_points=hist_points,
+            radius_m=3000
+        )
+
     if st.button("🔍 Analyze Water Safety", type="primary", use_container_width=True):
         with st.spinner("Fetching weather data and analyzing risk..."):
-            # Fetch weather data
-            weather_data = fetch_weather_data(
-                st.session_state.latitude,
-                st.session_state.longitude
-            )
-            
+            weather_data = fetch_weather_data(st.session_state.latitude, st.session_state.longitude)
             if weather_data:
-                # Calculate risk
-                risk_score, risk_factors, risk_level = calculate_risk_score(
-                    weather_data,
-                    observations
-                )
-                
-                # Store in session state
+                risk_score, risk_factors, risk_level = calculate_risk_score(weather_data, observations)
                 st.session_state.current_assessment = {
                     'weather_data': weather_data,
                     'risk_score': risk_score,
@@ -404,8 +436,6 @@ if 'latitude' in st.session_state and 'longitude' in st.session_state:
                     'risk_factors': risk_factors,
                     'timestamp': datetime.now()
                 }
-                
-                # Save to history
                 save_to_history(
                     st.session_state.location_name,
                     st.session_state.latitude,
@@ -416,146 +446,84 @@ if 'latitude' in st.session_state and 'longitude' in st.session_state:
                     risk_factors,
                     observations
                 )
-                
                 st.success("✅ Analysis complete!")
-    
+
     # Display current assessment
     if 'current_assessment' in st.session_state:
         assessment = st.session_state.current_assessment
-        
         st.markdown("---")
         st.header("📊 Current Risk Assessment")
-        
-        # Display timestamp
         st.caption(f"Last updated: {assessment['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}")
-        
-        # Risk gauge
         col1, col2 = st.columns([1, 2])
-        
         with col1:
             fig = display_risk_gauge(assessment['risk_score'], assessment['risk_level'])
             st.plotly_chart(fig, use_container_width=True)
-        
         with col2:
-            # Weather metrics
             st.subheader("🌤️ Current Weather Conditions")
             current = assessment['weather_data'].get('current', {})
-            
             metric_col1, metric_col2, metric_col3 = st.columns(3)
-            metric_col1.metric(
-                "Temperature",
-                f"{current.get('temperature_2m', 'N/A')}°C"
-            )
-            metric_col2.metric(
-                "Humidity",
-                f"{current.get('relative_humidity_2m', 'N/A')}%"
-            )
-            metric_col3.metric(
-                "Precipitation",
-                f"{current.get('precipitation', 0)} mm"
-            )
-            
-            # Risk factors
+            metric_col1.metric("Temperature", f"{current.get('temperature_2m', 'N/A')}°C")
+            metric_col2.metric("Humidity", f"{current.get('relative_humidity_2m', 'N/A')}%")
+            metric_col3.metric("Precipitation", f"{current.get('precipitation', 0)} mm")
+
             st.subheader("⚠️ Risk Factors Detected")
             if assessment['risk_factors']:
                 for factor in assessment['risk_factors']:
                     st.markdown(f"• {factor}")
             else:
                 st.success("No significant risk factors detected")
-        
-        # Recommendations
+
         st.markdown("---")
-        recommendations = get_recommendations(
-            assessment['risk_level'],
-            assessment['risk_score']
-        )
-        
+        recommendations = get_recommendations(assessment['risk_level'], assessment['risk_score'])
         st.markdown(f'<div class="risk-{recommendations["color"]}">', unsafe_allow_html=True)
         st.subheader(recommendations['title'])
         for action in recommendations['actions']:
             st.markdown(f"• {action}")
         st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Precipitation chart
+
         if 'hourly' in assessment['weather_data'] and 'precipitation' in assessment['weather_data']['hourly']:
             st.markdown("---")
             st.subheader("📈 Precipitation History (Last 72 Hours)")
-            
             hourly_data = assessment['weather_data']['hourly']
             precip = hourly_data['precipitation'][-72:]
-            
-            df_precip = pd.DataFrame({
-                'Hour': range(len(precip)),
-                'Precipitation (mm)': precip
-            })
-            
+            df_precip = pd.DataFrame({'Hour': range(len(precip)), 'Precipitation (mm)': precip})
             st.line_chart(df_precip.set_index('Hour'))
 
 # History View
 st.markdown("---")
 st.header("📜 Assessment History")
-
 if st.session_state.history:
-    # Convert to DataFrame
     history_df = pd.DataFrame(st.session_state.history)
     history_df['timestamp'] = pd.to_datetime(history_df['timestamp'])
     history_df = history_df.sort_values('timestamp', ascending=False)
-    
-    # Summary statistics
+
     col1, col2, col3, col4 = st.columns(4)
-    
     col1.metric("Total Checks", len(history_df))
-    col2.metric(
-        "High Risk Days",
-        len(history_df[history_df['risk_level'] == 'Unsafe'])
-    )
-    col3.metric(
-        "Avg Risk Score",
-        f"{history_df['risk_score'].mean():.1f}"
-    )
-    col4.metric(
-        "Last Check",
-        history_df['timestamp'].iloc[0].strftime('%m/%d')
-    )
-    
-    # Show recent history
+    col2.metric("High Risk Days", len(history_df[history_df['risk_level'] == 'Unsafe']))
+    col3.metric("Avg Risk Score", f"{history_df['risk_score'].mean():.1f}")
+    col4.metric("Last Check", history_df['timestamp'].iloc[0].strftime('%m/%d'))
+
     st.subheader("Recent Assessments")
-    
     for idx, row in history_df.head(10).iterrows():
-        risk_class = {
-            'Safe': 'safe',
-            'Caution': 'caution',
-            'Unsafe': 'unsafe'
-        }[row['risk_level']]
-        
         with st.expander(
-            f"{row['timestamp'].strftime('%Y-%m-%d %H:%M')} - "
-            f"{row['location']} - "
-            f"{row['risk_level']} (Score: {row['risk_score']})"
+            f"{row['timestamp'].strftime('%Y-%m-%d %H:%M')} - {row['location']} - {row['risk_level']} (Score: {row['risk_score']})"
         ):
-            col1, col2 = st.columns(2)
-            
-            with col1:
+            c1, c2 = st.columns(2)
+            with c1:
                 st.write(f"**Risk Level:** {row['risk_level']}")
                 st.write(f"**Risk Score:** {row['risk_score']}")
                 st.write(f"**Temperature:** {row['temperature']}°C")
                 st.write(f"**Humidity:** {row['humidity']}%")
-            
-            with col2:
+            with c2:
                 st.write("**Risk Factors:**")
                 for factor in row['risk_factors']:
                     st.write(f"• {factor}")
-    
-    # Risk trend chart
+
     if len(history_df) > 1:
         st.subheader("📊 Risk Score Trend")
-        
-        trend_df = history_df[['timestamp', 'risk_score']].copy()
-        trend_df = trend_df.sort_values('timestamp')
-        
+        trend_df = history_df[['timestamp', 'risk_score']].copy().sort_values('timestamp')
         st.line_chart(trend_df.set_index('timestamp'))
-    
-    # Clear history button
+
     if st.button("🗑️ Clear History", type="secondary"):
         st.session_state.history = []
         if os.path.exists(HISTORY_FILE):
@@ -575,5 +543,4 @@ st.markdown("""
         Always follow local water authority guidelines and official advisories.
     </p>
 </div>
-
 """, unsafe_allow_html=True)
