@@ -9,7 +9,7 @@ import os
 
 # Page configuration
 st.set_page_config(
-    page_title="Water Safety Monitor",
+    page_title="Water Safety Montor",
     page_icon="💧",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -575,4 +575,5 @@ st.markdown("""
         Always follow local water authority guidelines and official advisories.
     </p>
 </div>
+
 """, unsafe_allow_html=True)
