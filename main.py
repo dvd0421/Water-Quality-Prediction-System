@@ -11,11 +11,6 @@ import plotly.graph_objects as go
 from geopy.geocoders import Nominatim
 import os
 
-# NEW: folium map imports
-import folium
-from streamlit_folium import st_folium
-from folium.plugins import MarkerCluster
-
 # Page configuration
 st.set_page_config(
     page_title="Water Safety Monitor",
@@ -324,58 +319,7 @@ def display_risk_gauge(risk_score, risk_level):
     
     return fig
 
-# NEW: OpenStreetMap rendering
-def render_osm_map(center_lat, center_lon, current_assessment, history_list):
-    # Base map
-    zoom = 11 if center_lat and center_lon else 2
-    m = folium.Map(location=[center_lat, center_lon], zoom_start=zoom, tiles="OpenStreetMap", control_scale=True)
 
-    # Current location marker
-    if center_lat and center_lon:
-        popup_lines = []
-        if current_assessment:
-            rs = current_assessment.get("risk_score")
-            rl = current_assessment.get("risk_level")
-            popup_lines.append(f"Risk: {rl} ({rs})")
-            cur = current_assessment.get("weather_data", {}).get("current", {})
-            if cur:
-                popup_lines.append(f"Temp: {cur.get('temperature_2m','N/A')}°C")
-                popup_lines.append(f"Precip: {cur.get('precipitation',0)} mm")
-        popup_html = "<br>".join(popup_lines) if popup_lines else "Selected location"
-
-        folium.Marker(
-            [center_lat, center_lon],
-            tooltip="Current location",
-            popup=popup_html,
-            icon=folium.Icon(color="blue", icon="info-sign")
-        ).add_to(m)
-
-    # History markers
-    if history_list:
-        cluster = MarkerCluster().add_to(m)
-        for h in history_list[:200]:  # limit for performance
-            lat = h.get("latitude")
-            lon = h.get("longitude")
-            if lat is None or lon is None:
-                continue
-            rl = h.get("risk_level", "Caution")
-            color_by_level = {"Safe": "green", "Caution": "orange", "Unsafe": "red"}.get(rl, "gray")
-            ts = h.get("timestamp","")
-            loc = h.get("location","")
-            rs = h.get("risk_score","")
-            popup = f"{ts}<br>{loc}<br>Risk: {rl} ({rs})"
-            folium.CircleMarker(
-                [lat, lon],
-                radius=6,
-                fill=True,
-                fill_opacity=0.9,
-                color=color_by_level
-            ).add_to(cluster)
-            folium.Marker([lat, lon], popup=popup, icon=folium.Icon(color=color_by_level)).add_to(cluster)
-
-    # Render and capture interactions
-    map_data = st_folium(m, height=420, width=None)
-    return map_data
 
 # Main App
 st.markdown('<h1 class="main-header">💧 Water Safety Monitor</h1>', unsafe_allow_html=True)
@@ -447,19 +391,20 @@ st.subheader("🗺️ Map")
 current_lat = st.session_state.get('latitude', 25.2048)   # default near UAE
 current_lon = st.session_state.get('longitude', 55.2708)
 
-map_interaction = render_osm_map(current_lat, current_lon, st.session_state.get('current_assessment'), st.session_state.history)
+st.subheader("🗺️ Map")
+current_lat = st.session_state.get('latitude', 25.2048)
+current_lon = st.session_state.get('longitude', 55.2708)
 
-# If user clicked on the map, update coordinates immediately
-if map_interaction and map_interaction.get("last_clicked"):
-    clicked = map_interaction["last_clicked"]
-    new_lat = float(clicked["lat"])
-    new_lon = float(clicked["lng"])
-    # Only update if changed to avoid reverse-geocoding spam
-    if abs(new_lat - st.session_state.get('latitude', 0)) > 1e-6 or abs(new_lon - st.session_state.get('longitude', 0)) > 1e-6:
-        st.session_state.latitude = new_lat
-        st.session_state.longitude = new_lon
-        st.session_state.location_name = get_address_from_coordinates(new_lat, new_lon)
-        st.info(f"📍 Selected on map: {st.session_state.location_name}")
+# Combine current and historical points
+map_points = []
+if st.session_state.history:
+    for h in st.session_state.history:
+        if h.get("latitude") and h.get("longitude"):
+            map_points.append({"lat": h["latitude"], "lon": h["longitude"]})
+map_points.append({"lat": current_lat, "lon": current_lon})
+
+# Show Streamlit map
+st.map(pd.DataFrame(map_points))
 
 # Main content
 if 'latitude' in st.session_state and 'longitude' in st.session_state:
@@ -660,3 +605,4 @@ st.markdown("""
     </p>
 </div>
 """, unsafe_allow_html=True)
+
