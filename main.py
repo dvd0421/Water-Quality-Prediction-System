@@ -406,7 +406,7 @@ st.map(
     df_map,
     latitude=current_lat,
     longitude=current_lon,
-    zoom=3,
+    zoom=2,
     use_container_width=True
 )
 
@@ -609,6 +609,7 @@ st.markdown("""
     </p>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
