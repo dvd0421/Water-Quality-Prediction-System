@@ -385,11 +385,7 @@ additional_notes = st.sidebar.text_area(
     placeholder="Any other observations or concerns..."
 )
 
-# NEW: Show OpenStreetMap and allow clicking to set location
 st.markdown("---")
-st.subheader("🗺️ Map")
-current_lat = st.session_state.get('latitude', 25.2048)   # default near UAE
-current_lon = st.session_state.get('longitude', 55.2708)
 
 st.subheader("🗺️ Map")
 current_lat = st.session_state.get('latitude', 25.2048)
@@ -605,4 +601,5 @@ st.markdown("""
     </p>
 </div>
 """, unsafe_allow_html=True)
+
 
