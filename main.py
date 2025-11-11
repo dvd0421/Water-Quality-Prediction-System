@@ -399,8 +399,16 @@ if st.session_state.history:
             map_points.append({"lat": h["latitude"], "lon": h["longitude"]})
 map_points.append({"lat": current_lat, "lon": current_lon})
 
-# Show Streamlit map
-st.map(pd.DataFrame(map_points))
+df_map = pd.DataFrame(map_points)
+
+# Display zoomed map centered on selected coordinates
+st.map(
+    df_map,
+    latitude=current_lat,
+    longitude=current_lon,
+    zoom=11,
+    use_container_width=True
+)
 
 # Main content
 if 'latitude' in st.session_state and 'longitude' in st.session_state:
@@ -601,5 +609,6 @@ st.markdown("""
     </p>
 </div>
 """, unsafe_allow_html=True)
+
 
 
