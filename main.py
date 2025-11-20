@@ -323,7 +323,7 @@ def display_risk_gauge(risk_score, risk_level):
 
 # Main App
 st.markdown('<h1 class="main-header">💧 Water Safety Monitor</h1>', unsafe_allow_html=True)
-st.markdown("### Real-time water contamination risk assessment based on environmental conditions")
+st.markdown("### Real-time water contamination risk assessment based on environmental conditions check check")
 
 # Sidebar - Location Input
 st.sidebar.header("📍 Location Settings")
@@ -609,6 +609,7 @@ st.markdown("""
     </p>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
