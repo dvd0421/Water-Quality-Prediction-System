@@ -18,42 +18,85 @@ st.set_page_config(
 # Custom CSS for better styling
 st.markdown("""
 <style>
+    /* General layout */
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        max-width: 1100px;
+    }
+
+    /* Main header */
     .main-header {
-        font-size: 2.5rem;
-        font-weight: bold;
-        color: #1f77b4;
+        font-size: 2.8rem;
+        font-weight: 800;
         text-align: center;
-        margin-bottom: 2rem;
+        color: #0d6efd;
+        margin-bottom: 1.5rem;
+    }
+
+    h2, h3, h4 {
+        color: #0d6efd;
+        font-weight: 600;
+    }
+
+    /* Risk panels */
+    .risk-safe, .risk-caution, .risk-unsafe {
+        padding: 1.2rem 1.5rem;
+        border-radius: 10px;
+        margin: 1.2rem 0;
+        color: #333;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
     .risk-safe {
-        background-color: #d4edda;
-        border-left: 5px solid #28a745;
-        padding: 1rem;
-        border-radius: 5px;
-        margin: 1rem 0;
+        background: linear-gradient(90deg, #eafaf1, #d4edda);
+        border-left: 6px solid #28a745;
     }
     .risk-caution {
-        background-color: #fff3cd;
-        border-left: 5px solid #ffc107;
-        padding: 1rem;
-        border-radius: 5px;
-        margin: 1rem 0;
+        background: linear-gradient(90deg, #fff8e1, #fff3cd);
+        border-left: 6px solid #ffc107;
     }
     .risk-unsafe {
-        background-color: #f8d7da;
-        border-left: 5px solid #dc3545;
-        padding: 1rem;
-        border-radius: 5px;
-        margin: 1rem 0;
+        background: linear-gradient(90deg, #fdecea, #f8d7da);
+        border-left: 6px solid #dc3545;
     }
-    .metric-box {
-        background-color: #f8f9fa;
-        padding: 1rem;
-        border-radius: 5px;
+
+    /* Metric cards */
+    div[data-testid="stMetricValue"] {
+        font-size: 1.6rem;
+        color: #0d6efd;
+    }
+
+    /* Buttons */
+    div.stButton > button {
+        background: linear-gradient(90deg, #1f77b4, #0d6efd);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        padding: 0.5rem 1rem;
+        transition: 0.2s;
+    }
+    div.stButton > button:hover {
+        transform: scale(1.02);
+        background: linear-gradient(90deg, #0d6efd, #1f77b4);
+    }
+
+    /* Expander styling */
+    details > summary {
+        font-weight: 600;
+        color: #0d6efd;
+    }
+
+    /* Footer */
+    .footer {
         text-align: center;
+        color: #777;
+        padding: 2rem 0;
+        font-size: 0.9rem;
     }
 </style>
 """, unsafe_allow_html=True)
+
 
 # Data storage file
 HISTORY_FILE = "water_safety_history.json"
@@ -576,5 +619,6 @@ st.markdown("""
     </p>
 </div>
 """, unsafe_allow_html=True)
+
 
 
