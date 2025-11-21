@@ -357,7 +357,7 @@ def display_risk_gauge(risk_score, risk_level):
     return fig
 
 # Main App
-st.markdown('<h1 class="main-header">💧 Water Safety Monitor</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-header">Water Safety Monitor</h1>', unsafe_allow_html=True)
 st.info("💡 Assess environmental and weather-based water contamination risk in real time.")
 
 # Optional decorative icon row
@@ -626,6 +626,7 @@ st.markdown("""
     <small>⚠️ For informational purposes only. Follow official water safety advisories.</small>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
