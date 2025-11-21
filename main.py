@@ -35,7 +35,7 @@ st.markdown("""
     }
 
     h2, h3, h4 {
-        color: #0d6efd;
+        color: #FFFFFF;
         font-weight: 600;
     }
 
@@ -619,6 +619,7 @@ st.markdown("""
     </p>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
