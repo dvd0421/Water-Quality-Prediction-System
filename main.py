@@ -30,7 +30,7 @@ st.markdown("""
         font-size: 2.8rem;
         font-weight: 800;
         text-align: center;
-        color: #0d6efd;
+        color: #FFFFFF;
         margin-bottom: 1.5rem;
     }
 
@@ -619,6 +619,7 @@ st.markdown("""
     </p>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
