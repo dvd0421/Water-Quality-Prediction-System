@@ -609,14 +609,11 @@ else:
     st.info("No assessment history yet. Perform your first analysis to start tracking data.")
 
 # Footer
-st.markdown("---")
 st.markdown("""
-<div style='text-align: center; color: gray; padding: 2rem 0;'>
-    <p><strong>Water Safety Monitor</strong> | Powered by Open-Meteo API</p>
-    <p style='font-size: 0.9rem;'>
-        ⚠️ This tool provides risk assessments based on environmental factors. 
-        Always follow local water authority guidelines and official advisories.
-    </p>
+<div class='footer'>
+    <strong>💧 Water Safety Monitor</strong><br>
+    <span>Powered by Open-Meteo API | Built with Streamlit</span><br>
+    <small>⚠️ For informational purposes only. Follow official water safety advisories.</small>
 </div>
 """, unsafe_allow_html=True)
 
