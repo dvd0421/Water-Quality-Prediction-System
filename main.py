@@ -360,7 +360,7 @@ def display_risk_gauge(risk_score, risk_level):
 st.markdown(
     """
     <div style='text-align: center;'>
-        <img src='https://static.vecteezy.com/system/resources/previews/000/579/853/original/water-drop-logo-template-vector.jpg' width='250'>
+        <img src='https://png.pngtree.com/png-vector/20221017/ourmid/pngtree-water-drop-logo-template-clear-clean-design-vector-png-image_39729550.png' width='250'>
     </div>
     """,
     unsafe_allow_html=True
@@ -628,6 +628,7 @@ st.markdown("""
     <small>⚠️ For informational purposes only. Follow official water safety advisories.</small>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
