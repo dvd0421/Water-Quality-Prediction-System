@@ -365,7 +365,7 @@ col_left, col_right = st.columns([1.5, 1])
 with col_left:
     st.header("📊 Current Risk Assessment Overview")
 with col_right:
-    st.image("https://img.icons8.com/color/96/000000/water.png", width=80)
+    st.image("https://static.vecteezy.com/system/resources/previews/000/579/853/original/water-drop-logo-template-vector.jpg", width=80)
 
 # Sidebar - Location Input
 st.sidebar.markdown("### ⚙️ Configuration")
@@ -626,6 +626,7 @@ st.markdown("""
     <small>⚠️ For informational purposes only. Follow official water safety advisories.</small>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
