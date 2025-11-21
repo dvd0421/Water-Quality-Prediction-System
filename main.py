@@ -360,8 +360,18 @@ def display_risk_gauge(risk_score, risk_level):
 st.markdown('<h1 class="main-header">💧 Water Safety Monitor</h1>', unsafe_allow_html=True)
 st.info("💡 Assess environmental and weather-based water contamination risk in real time.")
 
+# Optional decorative icon row
+col_left, col_right = st.columns([1.5, 1])
+with col_left:
+    st.header("📊 Current Risk Assessment Overview")
+with col_right:
+    st.image("https://img.icons8.com/color/96/000000/water.png", width=80)
+
 # Sidebar - Location Input
-st.sidebar.header("📍 Location Settings")
+st.sidebar.markdown("### ⚙️ Configuration")
+st.sidebar.divider()
+st.sidebar.markdown("### 🧭 Location Input")
+
 
 location_method = st.sidebar.radio(
     "Choose location method:",
@@ -616,6 +626,7 @@ st.markdown("""
     <small>⚠️ For informational purposes only. Follow official water safety advisories.</small>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
