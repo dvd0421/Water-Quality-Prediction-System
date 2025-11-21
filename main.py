@@ -357,6 +357,7 @@ def display_risk_gauge(risk_score, risk_level):
     return fig
 
 # Main App
+st.image("https://static.vecteezy.com/system/resources/previews/000/579/853/original/water-drop-logo-template-vector.jpg", width=250)
 st.markdown('<h1 class="main-header">Water Safety Monitor</h1>', unsafe_allow_html=True)
 st.info("💡 Assess environmental and weather-based water contamination risk in real time.")
 
@@ -365,12 +366,10 @@ col_left, col_right = st.columns([1.5, 1])
 with col_left:
     st.header("📊 Current Risk Assessment Overview")
 with col_right:
-    st.image("https://static.vecteezy.com/system/resources/previews/000/579/853/original/water-drop-logo-template-vector.jpg", width=250)
-
+    
 # Sidebar - Location Input
-st.sidebar.markdown("### ⚙️ Configuration")
-st.sidebar.divider()
 st.sidebar.markdown("### 🧭 Location Input")
+st.sidebar.divider()
 
 
 location_method = st.sidebar.radio(
@@ -626,6 +625,7 @@ st.markdown("""
     <small>⚠️ For informational purposes only. Follow official water safety advisories.</small>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
