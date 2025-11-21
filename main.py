@@ -361,11 +361,7 @@ st.image("https://static.vecteezy.com/system/resources/previews/000/579/853/orig
 st.markdown('<h1 class="main-header">Water Safety Monitor</h1>', unsafe_allow_html=True)
 st.info("💡 Assess environmental and weather-based water contamination risk in real time.")
 
-# Optional decorative icon row
-col_left, col_right = st.columns([1.5, 1])
-with col_left:
-    st.header("📊 Current Risk Assessment Overview")
-with col_right:
+st.header("📊 Current Risk Assessment Overview")
     
 # Sidebar - Location Input
 st.sidebar.markdown("### 🧭 Location Input")
@@ -625,6 +621,7 @@ st.markdown("""
     <small>⚠️ For informational purposes only. Follow official water safety advisories.</small>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
