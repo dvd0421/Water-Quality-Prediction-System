@@ -15,6 +15,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+sidebar_width = 400
 # Custom CSS for better styling
 st.markdown("""
 <style>
@@ -39,12 +40,14 @@ st.markdown("""
         font-weight: 600;
     }
 
-    [data-testid="stSidebar"] {
-            width: 400px; /* adjust as needed */
-        }
-        [data-testid="stSidebar"] > div:first-child {
-            width: 400px;
-        }
+    [data-testid="stSidebar"] {{
+            min-width: {sidebar_width}px;
+            max-width: {sidebar_width}px;
+        }}
+        [data-testid="stSidebar"] > div:first-child {{
+            min-width: {sidebar_width}px;
+            max-width: {sidebar_width}px;
+        }}
 
     /* Risk panels */
     .risk-safe, .risk-caution, .risk-unsafe {
@@ -635,6 +638,7 @@ st.markdown("""
     <small>⚠️ For informational purposes only. Follow official water safety advisories.</small>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
