@@ -39,6 +39,13 @@ st.markdown("""
         font-weight: 600;
     }
 
+    [data-testid="stSidebar"] {
+            width: 400px; /* adjust as needed */
+        }
+        [data-testid="stSidebar"] > div:first-child {
+            width: 400px;
+        }
+
     /* Risk panels */
     .risk-safe, .risk-caution, .risk-unsafe {
         padding: 1.2rem 1.5rem;
@@ -628,6 +635,7 @@ st.markdown("""
     <small>⚠️ For informational purposes only. Follow official water safety advisories.</small>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
